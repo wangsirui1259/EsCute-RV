@@ -22,8 +22,9 @@ test.json
 *.out
 coremark/docs
 *.elf
-*.SText
+# *.SText
 coremark/*.hex
 coremark/*.o
 coremark/escute/*.hex
 coremark/escute/*.o
+
