@@ -44,9 +44,31 @@ module RegisterF (
     end
 
     // 读取使用组合逻辑
+    // 实现写优先（write-through）：如果当前周期正在写入的寄存器被读取，
+    // 则直接返回写入的数据而不是寄存器堆中的旧值
+    // 这解决了分支跳转后立即读取刚写入寄存器的冒险问题
     always_comb begin
-        rD1 = (rR1 == 0) ? {32{1'b0}} : rf_in[rR1];  // x0寄存器恒为0
-        rD2 = (rR2 == 0) ? {32{1'b0}} : rf_in[rR2];
+        // 读端口1：检查是否与写端口冲突
+        if (rR1 == 0) begin
+            rD1 = {32{1'b0}};  // x0寄存器恒为0
+        end else if (rf_we && wR == rR1) begin
+            rD1 = wD;  // 写优先：返回正在写入的值
+        end else if (rf_we2 && wR2 == rR1 && !(rf_we && wR == rR1)) begin
+            rD1 = wD2;  // 乘法器写端口优先（当主端口不写同一寄存器时）
+        end else begin
+            rD1 = rf_in[rR1];
+        end
+        
+        // 读端口2：检查是否与写端口冲突
+        if (rR2 == 0) begin
+            rD2 = {32{1'b0}};  // x0寄存器恒为0
+        end else if (rf_we && wR == rR2) begin
+            rD2 = wD;  // 写优先：返回正在写入的值
+        end else if (rf_we2 && wR2 == rR2 && !(rf_we && wR == rR2)) begin
+            rD2 = wD2;  // 乘法器写端口优先（当主端口不写同一寄存器时）
+        end else begin
+            rD2 = rf_in[rR2];
+        end
     end
 
 endmodule
